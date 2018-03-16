@@ -5,6 +5,11 @@
 
 def get_dataset_info(**keyword_counts):
 	"""
+	FUNCTION: 
+		This function recieves a dictionary and outputs three things: (i) the number of lines in
+		the real headlines dataset, (ii) the number of lines in the fake headlines dataset, and 
+		(iii) a dictionary with words and their number of occurences in each of the datasets.
+
 	INPUT:
 		**keyword_counts (dict)	: a dictionary where the keys are the keywords to be counted
 								  and the values are subdictionaries with values "real" or 
@@ -36,6 +41,9 @@ def get_dataset_info(**keyword_counts):
 
 def partition_data(txt_file):
 	"""
+	FUNCTION:
+		This function receives a .txt text file and partitions the data into a training, validation, 
+		and test set containing only the headlines data (i.e., without classifications).
 	INPUT:
 		txt_file (.txt file)	: a text file of real or fake news headlines
 	OUTPUT:
@@ -80,6 +88,11 @@ def partition_data(txt_file):
 
 def get_datasets():
 	"""
+	FUNCTION:
+		This function calls partition_data to obtain the training, validation, and test sets of the
+		headlines to be used in training. It then creates their corresponding "classification" sets
+		that classify each headline as either "fake" or "real".
+
 	OUTPUT:
 		train_set (list)		: a list of headlines containing ~70% of the total data
 		val_set (list)			: a list of headlines containing ~15% of the total data

@@ -3,9 +3,13 @@
 #				 PART 2 				 #
 ##########################################
 import time
+from part1 import *
 
 def get_count(word,txt_file):
 	"""
+	FUNCTION:
+		This function takes as input the string 'word' and text file 'txt_file' and outputs
+		the count of that word in that text file.
 	INPUT:
 		word (string)			: word to be searched for in txt_file
 		txt_file (.txt file)	: a text file of real or fake news headlines
@@ -21,6 +25,9 @@ def get_count(word,txt_file):
 
 def get_word_set(txt_file):
 	"""
+	FUNCTION:
+		This function takes as input the text file 'txt_file' and outputs all the unique words
+		(i.e., the set of words) within that text file.
 	INPUT:
 		txt_file (.txt file)	: a text file of real or fake news headlines
 	OUTPUT:
@@ -41,7 +48,8 @@ def naive_bayes():
 		count = get_count(word,"clean_real.txt")
 		tot_count += count
 
-	
+	# x_train, y_train, x_val, y_val, x_test, y_test = get_datasets()
+	# print(x_train, y_train)
 
 #________________________ RUN PART2 ________________________
-naive_bayes()
+# naive_bayes()
