@@ -4,6 +4,8 @@
 ##########################################
 import time
 from part1 import *
+from math import log as log
+from math import exp as exp
 
 def get_count(word,txt_file):
 	"""
@@ -107,7 +109,7 @@ def get_accuracy(y_pred,y):
 	"""	
 	correct = 0
 	total = 0
- 	i = 0
+	i = 0
 	while i < len(y_pred):
 		if y_pred[i] == y[i]:
 			correct += 1
@@ -126,7 +128,7 @@ def naive_bayes(P,x,y):
 	INPUT:
 		P (dict)				: a dictionary where the keys are "real" or "fake" and the values are
 								  subdictionaries with keys being words and values being their conditional
-								  probabilities P(xi = 1 | c).
+								  probabilities P(xi = 1 | c)
 		x (list)				: list of headlines data
 		y (list)				: list of headlines classification
 	OUTPUT:
@@ -140,13 +142,19 @@ def naive_bayes(P,x,y):
 		words = headline.split()
 		for word in words:
 			if word not in P["real"]:
-				sent_prob["real"] *= 0
+				# sent_prob["real"] *= 0
+				sent_prob["real"] += log(0.000000000000001) #log(0)
 			else:
-				sent_prob["real"] *= float(P["real"][word]) # MAKE THIS LOG (USE HINT FROM PROJECT PDF)
+				# sent_prob["real"] *= float(P["real"][word]) # MAKE THIS LOG (USE HINT FROM PROJECT PDF)
+				sent_prob["real"] += log(float(P["real"][word]))
 			if word not in P["fake"]:
-				sent_prob["fake"] *= 0
+				# sent_prob["fake"] *= 0
+				sent_prob["fake"] += log(0.000000000000001) #log(0)
 			else:
-				sent_prob["fake"] *= float(P["fake"][word])
+				# sent_prob["fake"] *= float(P["fake"][word])
+				sent_prob["fake"] += log(float(P["fake"][word]))
+		sent_prob["real"] = exp(sent_prob["real"])
+		sent_prob["fake"] = exp(sent_prob["fake"])
 		predicted_class = max(sent_prob, key=sent_prob.get) # returns the key corresponding to the max value in the dictionary
 		y_pred.append(predicted_class)
 		i += 1
@@ -154,8 +162,116 @@ def naive_bayes(P,x,y):
 
 	return accuracy
 
+def get_optimal_parameters(x_train,y_train,x_val, y_val):
+	"""
+	FUNCTION:
+		This function takes as input the training dataset pair (x_train, y_train) and the validation
+		dataset pair (x_val, y_val). The former is used to build the conditional probability distribution
+		dictionary and the latter is used to test the naive bayes' algorithm with varying parameter values.
+		This function sweeps through the a wide range of m and p combinations, and returns the parameters
+		m and p that yield the highest accuracy on the validation set.
+	OUTPUT:
+		m (int)					: naive bayes' parameter
+		p (float)				: naive bayes' paremeter
+	"""
+	best_accuracy = 0
+	best_parameters = [None,None]
+	for m in range(10,1010,10):
+		# if m % 100 == 0: # STAY UPDATED WHEN RUNNING PROGRAM
+			# print("Iterating through p with m = {}".format(m))
+		for p in [0.00005,0.0001,0.0005,0.001,0.005,0.01,0.05,0.10,0.50]: # for p in range(0.01,0.5,0.05): # didn't work
+			P = create_prob_dist(x_train,y_train,m,p)
+			accuracy = naive_bayes(P,x_val,y_val)
+			if accuracy > best_accuracy:
+				best_accuracy = accuracy
+				best_parameters = [m,p]
+				# print(best_accuracy)
+	m = best_parameters[0]
+	p = best_parameters[1]
+	return m, p
+
+def get_prior_probabilities(y):
+	"""
+	FUNCTION:
+		This function takes as input the y vector of headline classifications and returns the prior
+		probabilities of the classification being "real" or "fake" based on the proportion of the
+		training data in each class.
+	OUTPUT:
+		P_priors (dict)		: a dictionary with keys "real" and "fake" where the values are the prior
+							  probabilities of these classifications (i.e., P(c = real) and P(c = fake))
+	"""
+
+	P_priors = {"real": 0, "fake": 0} # initialize prior probabilities dict to zero
+	count_real, count_fake = 0, 0 # initialize counts to zero
+
+	for classification in y:
+		if classification == "real":
+			count_real += 1
+		else:
+			count_fake += 1
+
+	tot_count = count_real+count_fake
+	P_priors["real"] = count_real/tot_count
+	P_priors["fake"] = count_fake/tot_count
+
+	return P_priors
+
+def get_class_prob_dict(P, P_priors):
+	"""
+	FUNCTION:
+		This function takes as input two probability dictionaries P and P_priors and outputs a dictionary
+		P_classes containing the conditional probabilities of the classes given a word (i.e., P(c|w))
+	INPUT:
+		P (dict)				: a dictionary where the keys are "real" or "fake" and the values are
+								  subdictionaries with keys being words and values being their conditional
+								  probabilities P(xi = 1 | c)
+		P_priors (dict)		: a dictionary with keys "real" and "fake" where the values are the prior
+							  probabilities of these classifications (i.e., P(c = real) and P(c = fake))
+	"""
+	P_classes = {} #{"real": {}, "fake": {}}
+	for classification in P:
+		if classification == "real":
+			not_classification = "fake"
+		else:
+			not_classification = "real"
+		for word in P[classification]:
+			bayes_num = P[classification][word]*P_priors[classification]
+			
+			try:
+				bayes_denom = P[classification][word]*P_priors[classification] + P[not_classification][word]*P_priors[not_classification]
+			except KeyError:
+				bayes_denom = P[classification][word]*P_priors[classification]
+			
+			bayes_res = float(bayes_num)/float(bayes_denom)
+
+			if word not in P_classes:
+				P_classes[word] = {classification: bayes_res}
+			else:
+				P_classes[word][classification] = bayes_res
+
+	return P_classes
+
+def get_keywords(P_classes): # STILL PROGRAMMING
+	# 10 WORDS WHOSE PRESENCE MOST STRONGLY PREDICT THE NEWS IS REAL
+	# Probabilistically:
+	# ______________________________________________________________________________________________________________________
+	# P(c = real | w = word) 
+	# = P(c = real, w = word) / P(w = word)
+	# = P(w = word | c = real) * P(c = real) / [P(w = word | c = real) * P(c = real) + P(w = word | c = fake) * P(c = fake)]
+	#_______________________________________________________________________________________________________________________
+	top_10 = {}
+	for word in P_classes:
+		if len(top_10.keys()) < 10:
+			top_10[word] = P_classes[word]["real"]
+		if "real" not in P_classes[word]: continue
+		if P_classes[word]["real"] > min(top_10.values()):
+			word_of_min_prob = min(top_10, key=top_10.get)
+			top_10.pop(word_of_min_prob)
+			top_10[word_of_min_prob] = P_classes[word]["real"]
+	return top_10
+
+
 def part2():
-	word_set = get_word_set("clean_real.txt")
 
 	# GET DATASETS: HEADLINES (x) AND CLASSIFICATIONS (y)
 	x_train, y_train, x_val, y_val, x_test, y_test = get_datasets()	# NOTE: Ratio of real to fake news headlines in the datasets is ~ 1.5.
@@ -170,13 +286,29 @@ def part2():
 	global word_counts
 	word_counts = create_count_dict(x_train,y_train)
 
+	# OBTAIN OPTIMIZED NAIVE BAYES PARAMETERS
+	# m, p = get_optimal_parameters(x_train,y_train,x_val,y_val)
+	m, p = 750, 0.00005 # what is obtained by running the parameter optimzation function
+
 	# TRAIN (i.e., BUILD THE DISCRETE PROBABILITY DISTRIBUTION)
-	P = create_prob_dist(x_train,y_train)
+	P = create_prob_dist(x_train,y_train,m,p)
+
+	# GET THE ACCURACY OF THE NAIVE BAYES MODEL
 	accuracy = naive_bayes(P,x_val,y_val)
-	print(accuracy)
+	print("Best Accuracy was {}%, acheived with parameters (m = {}, p = {}).".format(accuracy,m,p))
+
+	# GET THE PRIOR PROBABILITY DISTRIBUTION DICTIONARY
+	P_priors = get_prior_probabilities(y_train)
+
+	# GET THE CONDITIONAL PROBABILITY DISTRIBUTION DICTIONARY CONTAINING P(c|w) FOR ALL WORDS w
+	P_classes = get_class_prob_dict(P,P_priors)
+
+	# PART 3
+	get_keywords(P_classes)
+
 
 #________________________ RUN PART2 ________________________
-# part2()
+part2()
 
 
 
