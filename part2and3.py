@@ -6,6 +6,7 @@ import time
 from part1 import *
 from math import log as log
 from math import exp as exp
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 
 def get_count(word,txt_file):
 	"""
@@ -303,7 +304,7 @@ def create_negated_class_prob_dict(P,P_priors,m,p):
 
 	return P_classes_negated
 
-def get_keywords(P_classes, P_classes_negated): # STILL PROGRAMMING
+def get_keywords(P_classes, P_classes_negated,no_stopwords=False): # STILL PROGRAMMING
 	# 10 WORDS WHOSE PRESENCE MOST STRONGLY PREDICT THE NEWS IS REAL
 	# Probabilistically:
 	# ______________________________________________________________________________________________________________________
@@ -316,6 +317,7 @@ def get_keywords(P_classes, P_classes_negated): # STILL PROGRAMMING
 	top_10_present = {"real": {}, "fake": {}}
 	for classification in top_10_present:
 		for word in P_classes:
+			if no_stopwords and word in ENGLISH_STOP_WORDS: continue
 			if len(top_10_present[classification].keys()) < 10:
 				top_10_present[classification][word] = P_classes[word][classification]
 				continue
@@ -329,6 +331,7 @@ def get_keywords(P_classes, P_classes_negated): # STILL PROGRAMMING
 	top_10_absent = {"real": {}, "fake": {}}
 	for classification in top_10_absent:
 		for word in P_classes_negated:
+			if no_stopwords and word in ENGLISH_STOP_WORDS: continue
 			if len(top_10_absent[classification].keys()) < 10:
 				top_10_absent[classification][word] = P_classes_negated[word][classification]
 				continue
@@ -374,18 +377,32 @@ def part2():
 
 	# GET THE CONDITIONAL PROBABILITY DISTRIBUTION DICTIONARY CONTAINING P(c|w) FOR ALL WORDS w
 	P_classes = create_class_prob_dict(P,P_priors,m,p)
+
+	# GET THE CONDITIONAL PROBABILITY DISTRIBUTION DICTIONARY CONTAINING P(c|not w) FOR ALL WORDS w
 	P_classes_negated = create_negated_class_prob_dict(P,P_priors,m,p)
 	return P_classes, P_classes_negated
 
 def part3():
+
+	# GET THE CONDITIONAL PROBABILITY DICTIONARIES (P(c|w) and P(c|not w)) FROM PART2
 	P_classes, P_classes_negated = part2()
+
+	# GET THE TOP 10 WORDS WITH MOST INFLUENCE WHEN PRESENT AND ABSENT IN CLASSIFYING HEADLINES
 	top_10_present, top_10_absent = get_keywords(P_classes,P_classes_negated)
-	word = "korea"
-
+	print("The top 10 words whos presence most strongly predict the news is real are:")
+	for word in top_10_present["real"]: print("{}: {}".format(word,top_10_present["real"][word]))
+	print("The top 10 words whos presence most strongly predict the news is fake are:")
+	for word in top_10_present["fake"]: print("{}: {}".format(word,top_10_present["fake"][word]))
 	
-	print(top_10_present["fake"])
-	print(top_10_absent["real"])
+	# GET THE TOP 10 WORDS WITH MOST INFLUENCE WHEN PRESENT AND ABSENT IN CLASSIFYING HEADLINES (WITHOUT STOPWORDS)
+	top_10_present, top_10_absent = get_keywords(P_classes,P_classes_negated, True)
+	print("The top 10 words whos absence most strongly predict the news is real are:")
+	for word in top_10_absent["real"]: print("{}: {}".format(word,top_10_absent["real"][word]))
 
+	print("The top 10 words whos absence most strongly predict the news is fake are:")
+	for word in top_10_absent["fake"]: print("{}: {}".format(word,top_10_absent["fake"][word]))
+
+	# COMPARE INFLUENCE OF ABSENCE VS. PRESENCE OF WORDS IN CLASSIFICATION
 
 #________________________ RUN PART2 ________________________
 # part2()
