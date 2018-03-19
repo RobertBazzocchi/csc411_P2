@@ -122,7 +122,6 @@ def get_datasets():
 def part1():
 	keywords = ["hate","everyone","bull"]
 
-
 	keyword_counts = {}
 
 	# INITIALIZE THE KEYWORD COUNTS TO ZERO
