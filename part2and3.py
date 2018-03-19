@@ -1,6 +1,6 @@
 
 ##########################################
-#				 PART 2 				 #
+#			 PART 2 AND PART 3			 #
 ##########################################
 import time
 from part1 import *
@@ -81,7 +81,7 @@ def create_prob_dist(x,y,m=100,p=0.01):
 	OUTPUT:
 		P (dict)				: a dictionary where the keys are "real" or "fake" and the values are
 								  subdictionaries with keys being words and values being their conditional
-								  probabilities P(xi = 1 | c).
+								  probabilities P(xi = 1 | c)
 	"""	
 	global tot_headlines_count
 	global word_counts
@@ -132,7 +132,7 @@ def get_accuracy(y_pred,y):
 
 	return accuracy*100
 
-def naive_bayes(P,x,y):
+def test_naive_bayes(P,x,y):
 	"""
 	FUNCTION:
 		This function takes as input the probability dictionary containing the conditional probabilities
@@ -183,22 +183,24 @@ def get_optimal_parameters(x_train,y_train,x_val, y_val):
 		dictionary and the latter is used to test the naive bayes' algorithm with varying parameter values.
 		This function sweeps through the a wide range of m and p combinations, and returns the parameters
 		m and p that yield the highest accuracy on the validation set.
+	INPUT:
+		x_train (list)		: a list of headlines containing ~70% of the total data
+		y_train (list)		: a list of classifications corresponding to the train_set headlines
+		x_val (list)		: a list of headlines containing ~15% of the total data
+		y_val (list)		: a list of classifications corresponding to the val_set headlines
 	OUTPUT:
-		m (int)					: naive bayes' parameter
-		p (float)				: naive bayes' paremeter
+		m (int)				: naive bayes' parameter
+		p (float)			: naive bayes' paremeter
 	"""
 	best_accuracy = 0
 	best_parameters = [None,None]
 	for m in range(10,1010,10):
-		# if m % 100 == 0: # STAY UPDATED WHEN RUNNING PROGRAM
-			# print("Iterating through p with m = {}".format(m))
 		for p in [0.00005,0.0001,0.0005,0.001,0.005,0.01,0.05,0.10,0.50]: # for p in range(0.01,0.5,0.05): # didn't work
 			P = create_prob_dist(x_train,y_train,m,p)
-			accuracy = naive_bayes(P,x_val,y_val)
+			accuracy = test_naive_bayes(P,x_val,y_val)
 			if accuracy > best_accuracy:
 				best_accuracy = accuracy
 				best_parameters = [m,p]
-				# print(best_accuracy)
 	m = best_parameters[0]
 	p = best_parameters[1]
 	return m, p
@@ -304,8 +306,29 @@ def create_negated_class_prob_dict(P,P_priors,m,p):
 
 	return P_classes_negated
 
-def get_keywords(P_classes, P_classes_negated,no_stopwords=False): # STILL PROGRAMMING
-	# 10 WORDS WHOSE PRESENCE MOST STRONGLY PREDICT THE NEWS IS REAL
+def get_top10s(P_classes, P_classes_negated,no_stopwords=False):
+	"""
+	FUNCTION:
+		This function takes as input two probability dictionaries P_classes and P_classes_negated 
+		and outputs two dictionaries containing the top 10 words most useful in classifiying 
+		headlines when those words are present or absent, for both "real" and "fake" headlines.
+	INPUT:
+		P_classes (dict)			: a dictionary where the keys are "real" or "fake" and the values are
+							 		 subdictionaries with keys being classifications and values being their 
+							 		 conditional probabilities P(c|w)
+		P_classes_negated (dict)	: a dictionary where the keys are "real" or "fake" and the values are
+							  	      subdictionaries with keys being classifications and values being their 
+							  		  conditional probabilities P(c|not w)
+		no_stopwords (boolean)		: an optional input that, when True, prevents stopwords from being returned
+									  in the top 10 dictionaries
+	OUTPUT:
+		top_10_present (dict)		: a dictionary where the keys are "real" or "fake" and the values are
+							  	      subdictionaries with keys being words and values being their conditional
+							  		  probabilities P(c|w)
+		top_10_absent (dict)		: a dictionary where the keys are "real" or "fake" and the values are
+							  	      subdictionaries with keys being words and values being their conditional
+							  		  probabilities P(c|not w)				  		  
+	"""
 	# Probabilistically:
 	# ______________________________________________________________________________________________________________________
 	# P(c = real | w = word) 
@@ -359,8 +382,8 @@ def part2():
 	word_counts = create_count_dict(x_train,y_train)
 
 	# OBTAIN OPTIMIZED NAIVE BAYES PARAMETERS
-	# m, p = get_optimal_parameters(x_train,y_train,x_val,y_val)
-	m, p = 750, 0.00005 # what is obtained by running the parameter optimzation function
+	m, p = get_optimal_parameters(x_train,y_train,x_val,y_val)
+	# m, p = 750, 0.00005 # what is obtained by running the parameter optimzation function
 
 	# TRAIN (i.e., BUILD THE DISCRETE PROBABILITY DISTRIBUTION)
 	P = create_prob_dist(x_train,y_train,m,p)
@@ -369,15 +392,14 @@ def part2():
 	# print(P["fake"][word])
 
 	# GET THE ACCURACY OF THE NAIVE BAYES MODEL
-	accuracy = naive_bayes(P,x_val,y_val)
-	# print("Best Accuracy was {}%, acheived with parameters (m = {}, p = {}).".format(accuracy,m,p))
+	accuracy = test_naive_bayes(P,x_val,y_val)
+	print("The best accuracy was {}%, achieved with parameters (m = {}, p = {}).".format(accuracy,m,p))
 
 	# GET THE PRIOR PROBABILITY DISTRIBUTION DICTIONARY
 	P_priors = get_prior_probabilities(y_train)
 
 	# GET THE CONDITIONAL PROBABILITY DISTRIBUTION DICTIONARY CONTAINING P(c|w) FOR ALL WORDS w
 	P_classes = create_class_prob_dict(P,P_priors,m,p)
-
 
 	# GET THE CONDITIONAL PROBABILITY DISTRIBUTION DICTIONARY CONTAINING P(c|not w) FOR ALL WORDS w
 	P_classes_negated = create_negated_class_prob_dict(P,P_priors,m,p)
@@ -387,27 +409,34 @@ def part3():
 
 	# GET THE CONDITIONAL PROBABILITY DICTIONARIES (P(c|w) and P(c|not w)) FROM PART2
 	P_classes, P_classes_negated = part2()
-
-	# GET THE TOP 10 WORDS WITH MOST INFLUENCE WHEN PRESENT AND ABSENT IN CLASSIFYING HEADLINES
-	top_10_present, top_10_absent = get_keywords(P_classes,P_classes_negated)
-	print("The top 10 words whos presence most strongly predict the news is real are:")
-	for word in top_10_present["real"]: print("{}: {}".format(word,top_10_present["real"][word]))
-	print("The top 10 words whos presence most strongly predict the news is fake are:")
-	for word in top_10_present["fake"]: print("{}: {}".format(word,top_10_present["fake"][word]))
 	
-	# GET THE TOP 10 WORDS WITH MOST INFLUENCE WHEN PRESENT AND ABSENT IN CLASSIFYING HEADLINES (WITHOUT STOPWORDS)
-	top_10_present, top_10_absent = get_keywords(P_classes,P_classes_negated, True)
-	print("The top 10 words whos absence most strongly predict the news is real are:")
+	print("____________________ TOP 10 WITH STOPWORDS ____________________")
+	# GET THE TOP 10 WORDS WITH MOST INFLUENCE WHEN PRESENT AND ABSENT IN CLASSIFYING HEADLINES
+	top_10_present, top_10_absent = get_top10s(P_classes,P_classes_negated)
+	print("The top 10 words whcose presence most strongly predict the news is real are:")
+	for word in top_10_present["real"]: print("{}: {}".format(word,top_10_present["real"][word]))
+	print("The top 10 words whose presence most strongly predict the news is fake are:")
+	for word in top_10_present["fake"]: print("{}: {}".format(word,top_10_present["fake"][word]))
+	print("The top 10 words whose absence most strongly predict the news is real are:")
 	for word in top_10_absent["real"]: print("{}: {}".format(word,top_10_absent["real"][word]))
-
-	print("The top 10 words whos absence most strongly predict the news is fake are:")
+	print("The top 10 words whose absence most strongly predict the news is fake are:")
 	for word in top_10_absent["fake"]: print("{}: {}".format(word,top_10_absent["fake"][word]))
 
-	# COMPARE INFLUENCE OF ABSENCE VS. PRESENCE OF WORDS IN CLASSIFICATION
+	print("____________________ TOP 10 WITHOUT STOPWORDS ____________________")
+	# GET THE TOP 10 WORDS WITH MOST INFLUENCE WHEN PRESENT AND ABSENT IN CLASSIFYING HEADLINES (WITHOUT STOPWORDS)
+	top_10_present, top_10_absent = get_top10s(P_classes,P_classes_negated,no_stopwords=True)
+	print("The top 10 words (excluding stopwords) whose presence most strongly predict the news is real are:")
+	for word in top_10_present["real"]: print("{}: {}".format(word,top_10_present["real"][word]))
+	print("The top 10 words (excluding stopwords) whose presence most strongly predict the news is fake are:")
+	for word in top_10_present["fake"]: print("{}: {}".format(word,top_10_present["fake"][word]))
+	print("The top 10 words (excluding stopwords) whose absence most strongly predict the news is real are:")
+	for word in top_10_absent["real"]: print("{}: {}".format(word,top_10_absent["real"][word]))
+	print("The top 10 words (excluding stopwords) whose absence most strongly predict the news is fake are:")
+	for word in top_10_absent["fake"]: print("{}: {}".format(word,top_10_absent["fake"][word]))
 
 #________________________ RUN PART2 ________________________
 # part2()
-part3()
+# part3()
 
 
 
