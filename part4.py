@@ -3,12 +3,15 @@
 ##########################################
 import time
 from part1 import *
-from part2 import *
+from part2and3 import *
 from math import log as log
 from math import exp as exp
 import torch
 import numpy as np
 import os.path
+import torch
+from torch.autograd import Variable
+import torch.nn.functional as F
 
 
 def make_column_numbers(datasets):
@@ -115,24 +118,43 @@ def get_sets():
 
 
 
+class Model(torch.nn.Module):
 
+    def __init__(self):
+        super(Model, self).__init__()
+        self.linear = torch.nn.Linear(5833, 1)  #5832 words + a bias
 
-'''
-def forward(x):
-	return np.dot(x,w)
+    def forward(self, x):
+        """
+        Using the sigmoid function
+        """
+        y_pred = F.sigmoid(self.linear(x))
+        return y_pred
 
+def test_model(model, x_set, y_set):
+   
+    y_pred = model(x_set).data.numpy()
+    y_set = y_set.data.numpy()
+    correct = 0
+    total = 0
 
-def loss(x,y):
-	y_pred = forward(x)
-	return = np.square(np.subtract(y,y_pred))
+    #print(np.argmax(y_pred, 1))
+    # LOOK AT THE PERFORMANCE
+    i = 0
+    for n in y_pred:
+    	if n[0] > 0.5:
 
+    		if y_set[i] > 0.5:
+    			correct += 1
 
-w_list = np.array([])
-mse_list = np.array([])
+    	else:
+    		if y_set[i] <= 0.5:
+    			correct += 1
 
-for w in np.arrange([0.0, 4.1, 0]):
+    	i += 1
 
-'''
+    return correct/i
+
 
 
 def part4():
@@ -145,8 +167,43 @@ def part4():
 	#print(y_train.shape)
 
 	sets = get_sets()
-	for i in sets:
-		print(i.shape)
+	x_train = sets[0]
+	y_train = sets[1]
+	x_val = sets[2]
+	y_val = sets[3]	
+
+	x_train = Variable(torch.from_numpy(x_train)).float()
+	y_train = Variable(torch.from_numpy(y_train)).float()
+	x_val = Variable(torch.from_numpy(x_val)).float()
+	y_val = Variable(torch.from_numpy(y_val)).float()
+
+
+	model = Model()
+
+
+	# Construct our loss function and an Optimizer. The call to model.parameters()
+	# in the SGD constructor will contain the learnable parameters of the two
+	# nn.Linear modules which are members of the model.
+	criterion = torch.nn.BCELoss(size_average=True)
+	optimizer = torch.optim.SGD(model.parameters(), lr=0.5)
+
+	# Training loop
+	for epoch in range(10000):
+    		y_pred = model(x_train)
+    		# Compute and print loss
+    		loss = criterion(y_pred, y_train)
+    		#print(epoch, loss.data[0])
+
+    		# Zero gradients, perform a backward pass, and update the weights.
+    		optimizer.zero_grad()
+    		loss.backward()
+    		optimizer.step()
+			#print('train')
+    		n = test_model(model,x_train,y_train)
+    		print(n)
+
+    		
+    
 	
 
 
