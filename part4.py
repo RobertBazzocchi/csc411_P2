@@ -14,6 +14,7 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 
 
 def make_column_numbers(datasets):
@@ -180,14 +181,13 @@ def part4():
 
 	model = Model()
 
-
-	criterion = torch.nn.BCELoss(size_average=True) #using the cross entropy loss function 
-	optimizer = torch.optim.SGD(model.parameters(), lr=0.5, weight_decay=0) #using Stocastic Gradient Descent
-
-	
+	#using the cross entropy loss function 
+	criterion = torch.nn.BCELoss(size_average=True) 
+	#using Stocastic Gradient Descent	
+	optimizer = torch.optim.SGD(model.parameters(), lr=0.5, weight_decay=0) 
 
 	#Seeting up arrays to record the learning rates
-	iterations = 1
+	iterations = 1000
 	x = np.linspace(0,iterations, iterations)
 	train_track = np.zeros(iterations,)
 	val_track = np.zeros(iterations,)
@@ -197,7 +197,6 @@ def part4():
 		y_pred = model(x_train)
 		# Compute and print loss
 		loss = criterion(y_pred, y_train)
-		#print(epoch, loss.data[0])
 
 		# Zero gradients, perform a backward pass, and update the weights.
 		optimizer.zero_grad()
@@ -237,21 +236,37 @@ def part4():
 	
 
 	sorted_weights = np.sort(weights)
+	filter_stop = True
 
 	print('HIGHEST WEIGHTS')
-	for i in range(10):
+	i = 0
+	words = 0
+	while words < 10:
 		index = np.where(weights==sorted_weights[-i-1])
+		if filter_stop and column_list[index[0][0]] in ENGLISH_STOP_WORDS:
+			i += 1
+			continue
+
 		print(sorted_weights[-i-1])
 
 		print(column_list[index[0][0]])
+		i += 1
+		words += 1
 
 
 	print('LOWEST WEIGHTS')
-	for i in range(10):
+	i = 0
+	words = 0
+	while words < 10:
 		index = np.where(weights==sorted_weights[i])
+		if filter_stop and column_list[index[0][0]] in ENGLISH_STOP_WORDS:
+			i += 1
+			continue
 		print(sorted_weights[i])
 
 		print(column_list[index[0][0]])
+		i += 1
+		words += 1
 
 
 
