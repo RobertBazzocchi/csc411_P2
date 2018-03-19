@@ -120,7 +120,7 @@ def get_datasets():
 	return train_set, train_class, val_set, val_class, test_set, test_class
 
 def part1():
-	keywords = ["hate","everyone","bull"]
+	keywords = ["reason","hillary","new"]
 
 	keyword_counts = {}
 
@@ -135,7 +135,7 @@ def part1():
 	print("        	          Dataset Summary")
 	print("----------------------------------------------------------------")
 
-	print("There are two datasets provided for this project - a set of real news headlines and set of fake news headlines. The real news dataset and the fake news dataset consist of {} and {} headlines, respectively. Thus, the real news dataset contains nearly 2000 more headlines than that of the fake news.\n".format(num_real_lines,num_fake_lines))
+	print("There are two datasets provided for this project - a set of real news headlines and set of fake news headlines. The real news dataset and the fake news dataset consist of {} and {} headlines, respectively. Thus, the real news dataset contains nearly 700 more headlines than that of the fake news.\n".format(num_real_lines,num_fake_lines))
 	print("It is difficult to predict the credibility of these news headlines simply by observation. However, there may be some keywords that indicate with a higher probability that a headline is fake or real.\n")
 
 	print("For example, take the words, \"{}\", \"{}\", and \"{}\". These strings were counted in both the real news dataset and the fake news dataset, although the counts vary drastically. Thus, seeing one of these words in a news headlines may cause us to believe it is within the category that has the larger count.".format(keywords[0],keywords[1],keywords[2]))
