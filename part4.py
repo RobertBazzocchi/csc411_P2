@@ -9,6 +9,7 @@ from math import exp as exp
 import torch
 import numpy as np
 import os.path
+<<<<<<< HEAD
 import torch
 from torch.autograd import Variable
 import torch.nn.functional as F
@@ -116,6 +117,7 @@ def get_sets():
 	else:
 		print('Building y_test from data')
 		y_test = make_y_set(y_test, 'test')
+
 
 	return [x_train, y_train, x_val, y_val, x_test, y_test, column_list]
 
@@ -268,9 +270,5 @@ def part4():
 		i += 1
 		words += 1
 
-
-
-
-	
 
 part4()
