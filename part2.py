@@ -304,7 +304,7 @@ def part2():
 	P_classes = get_class_prob_dict(P,P_priors)
 
 	# PART 3
-	get_keywords(P_classes)
+	#get_keywords(P_classes)
 
 
 #________________________ RUN PART2 ________________________
