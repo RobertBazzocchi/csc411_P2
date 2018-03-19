@@ -6,6 +6,7 @@ import time
 from part1 import *
 from math import log as log
 from math import exp as exp
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 
 def get_count(word,txt_file):
 	"""
@@ -87,12 +88,24 @@ def create_prob_dist(x,y,m=100,p=0.01):
 
 	P = {"real": {}, "fake": {}} # initialize the dict which will be the discrete probability distribution of words
 	i = 0
+
 	for headline in x:
 		classification = y[i]
 		words = set(headline.split())
+
+		if classification == "real":
+			not_classification = "fake"
+		else:
+			not_classification = "real"
+
 		for word in words:
 			# IMPLEMENTING: P(xi = 1| y = c) = count(xi,c)/count(c)
 			P[classification][word] = float(word_counts[classification][word] + m*p) / float(tot_headlines_count[classification] + m)
+			if word not in P[not_classification]:
+				if word not in word_counts[not_classification]:
+					P[not_classification][word] =float(m*p) / float(tot_headlines_count[not_classification] + m)
+				else:
+					P[not_classification][word] =float(word_counts[not_classification][word] + m*p) / float(tot_headlines_count[not_classification] + m)
 		i+=1
 	return P
 
@@ -211,39 +224,41 @@ def get_prior_probabilities(y):
 			count_fake += 1
 
 	tot_count = count_real+count_fake
-	P_priors["real"] = count_real/tot_count
-	P_priors["fake"] = count_fake/tot_count
-
+	P_priors["real"] = float(count_real)/float(tot_count)
+	P_priors["fake"] = float(count_fake)/float(tot_count)
 	return P_priors
 
-def get_class_prob_dict(P, P_priors):
+def create_class_prob_dict(P,P_priors,m,p):
 	"""
 	FUNCTION:
 		This function takes as input two probability dictionaries P and P_priors and outputs a dictionary
 		P_classes containing the conditional probabilities of the classes given a word (i.e., P(c|w))
 	INPUT:
-		P (dict)				: a dictionary where the keys are "real" or "fake" and the values are
-								  subdictionaries with keys being words and values being their conditional
-								  probabilities P(xi = 1 | c)
+		P (dict)			: a dictionary where the keys are "real" or "fake" and the values are
+							  subdictionaries with keys being words and values being their conditional
+							  probabilities P(xi = 1 | c)
 		P_priors (dict)		: a dictionary with keys "real" and "fake" where the values are the prior
 							  probabilities of these classifications (i.e., P(c = real) and P(c = fake))
+		m (int)				: naive bayes' parameter
+		p (float)			: naive bayes' paremeter
+	OUTPUT:
+		P_classes (dict)	: a dictionary where the keys are "real" or "fake" and the values are
+							  subdictionaries with keys being classifications and values being their 
+							  conditional probabilities P(c|w)
 	"""
-	P_classes = {} #{"real": {}, "fake": {}}
+	P_classes = {}
 	for classification in P:
+		
 		if classification == "real":
 			not_classification = "fake"
 		else:
 			not_classification = "real"
+
 		for word in P[classification]:
 			bayes_num = P[classification][word]*P_priors[classification]
-			
-			try:
-				bayes_denom = P[classification][word]*P_priors[classification] + P[not_classification][word]*P_priors[not_classification]
-			except KeyError:
-				bayes_denom = P[classification][word]*P_priors[classification]
-			
+			bayes_denom = P[classification][word]*P_priors[classification] + P[not_classification][word]*P_priors[not_classification]
 			bayes_res = float(bayes_num)/float(bayes_denom)
-
+			
 			if word not in P_classes:
 				P_classes[word] = {classification: bayes_res}
 			else:
@@ -251,7 +266,45 @@ def get_class_prob_dict(P, P_priors):
 
 	return P_classes
 
-def get_keywords(P_classes): # STILL PROGRAMMING
+def create_negated_class_prob_dict(P,P_priors,m,p):
+	"""
+	FUNCTION:
+		This function takes as input two probability dictionaries P and P_priors and outputs a dictionary
+		P_classes containing the conditional probabilities of the classes given a word (i.e., P(c|not w))
+	INPUT:
+		P (dict)			: a dictionary where the keys are "real" or "fake" and the values are
+							  subdictionaries with keys being words and values being their conditional
+							  probabilities P(xi = 1 | c)
+		P_priors (dict)		: a dictionary with keys "real" and "fake" where the values are the prior
+							  probabilities of these classifications (i.e., P(c = real) and P(c = fake))
+		m (int)				: naive bayes' parameter
+		p (float)			: naive bayes' paremeter
+	OUTPUT:
+		P_classes_negated (dict)	: a dictionary where the keys are "real" or "fake" and the values are
+							  	      subdictionaries with keys being classifications and values being their 
+							  		  conditional probabilities P(c|not w)
+	"""
+	P_classes_negated = {}
+	for classification in P:
+
+		if classification == "real":
+			not_classification = "fake"
+		else:
+			not_classification = "real"
+
+		for word in P[classification]:
+			bayes_num = (1-P[classification][word])*P_priors[classification]
+			bayes_denom = (1-P[classification][word])*P_priors[classification] + (1-P[not_classification][word])*P_priors[not_classification]
+			bayes_res = float(bayes_num)/float(bayes_denom)
+			
+			if word not in P_classes_negated:
+				P_classes_negated[word] = {classification: bayes_res}
+			else:
+				P_classes_negated[word][classification] = bayes_res
+
+	return P_classes_negated
+
+def get_keywords(P_classes, P_classes_negated,no_stopwords=False): # STILL PROGRAMMING
 	# 10 WORDS WHOSE PRESENCE MOST STRONGLY PREDICT THE NEWS IS REAL
 	# Probabilistically:
 	# ______________________________________________________________________________________________________________________
@@ -259,17 +312,36 @@ def get_keywords(P_classes): # STILL PROGRAMMING
 	# = P(c = real, w = word) / P(w = word)
 	# = P(w = word | c = real) * P(c = real) / [P(w = word | c = real) * P(c = real) + P(w = word | c = fake) * P(c = fake)]
 	#_______________________________________________________________________________________________________________________
-	top_10 = {}
-	for word in P_classes:
-		if len(top_10.keys()) < 10:
-			top_10[word] = P_classes[word]["real"]
-		if "real" not in P_classes[word]: continue
-		if P_classes[word]["real"] > min(top_10.values()):
-			word_of_min_prob = min(top_10, key=top_10.get)
-			top_10.pop(word_of_min_prob)
-			top_10[word_of_min_prob] = P_classes[word]["real"]
-	return top_10
+	
+	# 10 WORDS WHOSE PRESENCE MOST STRONGLY PREDICT THE NEWS IS REAL AND FAKE
+	top_10_present = {"real": {}, "fake": {}}
+	for classification in top_10_present:
+		for word in P_classes:
+			if no_stopwords and word in ENGLISH_STOP_WORDS: continue
+			if len(top_10_present[classification].keys()) < 10:
+				top_10_present[classification][word] = P_classes[word][classification]
+				continue
+			if classification in P_classes[word]: 
+				if P_classes[word][classification] > min(top_10_present[classification].values()):
+					word_of_min_prob = min(top_10_present[classification], key=top_10_present[classification].get)
+					top_10_present[classification].pop(word_of_min_prob)
+					top_10_present[classification][word] = P_classes[word][classification]
 
+	# 10 WORDS WHOSE ABSENCE MOST STRONGLY PREDICT THE NEWS IS REAL AND FAKE
+	top_10_absent = {"real": {}, "fake": {}}
+	for classification in top_10_absent:
+		for word in P_classes_negated:
+			if no_stopwords and word in ENGLISH_STOP_WORDS: continue
+			if len(top_10_absent[classification].keys()) < 10:
+				top_10_absent[classification][word] = P_classes_negated[word][classification]
+				continue
+			if classification in P_classes_negated[word]: 
+				if P_classes_negated[word][classification] > min(top_10_absent[classification].values()):
+					word_of_min_prob = min(top_10_absent[classification], key=top_10_absent[classification].get)
+					top_10_absent[classification].pop(word_of_min_prob)
+					top_10_absent[classification][word] = P_classes_negated[word][classification]
+
+	return top_10_present, top_10_absent
 
 def part2():
 
@@ -292,25 +364,50 @@ def part2():
 
 	# TRAIN (i.e., BUILD THE DISCRETE PROBABILITY DISTRIBUTION)
 	P = create_prob_dist(x_train,y_train,m,p)
+	# word = "machines"
+	# print(P["real"][word])
+	# print(P["fake"][word])
 
 	# GET THE ACCURACY OF THE NAIVE BAYES MODEL
 	accuracy = naive_bayes(P,x_val,y_val)
-	print("Best Accuracy was {}%, acheived with parameters (m = {}, p = {}).".format(accuracy,m,p))
+	# print("Best Accuracy was {}%, acheived with parameters (m = {}, p = {}).".format(accuracy,m,p))
 
 	# GET THE PRIOR PROBABILITY DISTRIBUTION DICTIONARY
 	P_priors = get_prior_probabilities(y_train)
 
 	# GET THE CONDITIONAL PROBABILITY DISTRIBUTION DICTIONARY CONTAINING P(c|w) FOR ALL WORDS w
-	P_classes = get_class_prob_dict(P,P_priors)
+	P_classes = create_class_prob_dict(P,P_priors,m,p)
 
-	# PART 3
-	#get_keywords(P_classes)
 
+	# GET THE CONDITIONAL PROBABILITY DISTRIBUTION DICTIONARY CONTAINING P(c|not w) FOR ALL WORDS w
+	P_classes_negated = create_negated_class_prob_dict(P,P_priors,m,p)
+	return P_classes, P_classes_negated
+
+def part3():
+
+	# GET THE CONDITIONAL PROBABILITY DICTIONARIES (P(c|w) and P(c|not w)) FROM PART2
+	P_classes, P_classes_negated = part2()
+
+	# GET THE TOP 10 WORDS WITH MOST INFLUENCE WHEN PRESENT AND ABSENT IN CLASSIFYING HEADLINES
+	top_10_present, top_10_absent = get_keywords(P_classes,P_classes_negated)
+	print("The top 10 words whos presence most strongly predict the news is real are:")
+	for word in top_10_present["real"]: print("{}: {}".format(word,top_10_present["real"][word]))
+	print("The top 10 words whos presence most strongly predict the news is fake are:")
+	for word in top_10_present["fake"]: print("{}: {}".format(word,top_10_present["fake"][word]))
+	
+	# GET THE TOP 10 WORDS WITH MOST INFLUENCE WHEN PRESENT AND ABSENT IN CLASSIFYING HEADLINES (WITHOUT STOPWORDS)
+	top_10_present, top_10_absent = get_keywords(P_classes,P_classes_negated, True)
+	print("The top 10 words whos absence most strongly predict the news is real are:")
+	for word in top_10_absent["real"]: print("{}: {}".format(word,top_10_absent["real"][word]))
+
+	print("The top 10 words whos absence most strongly predict the news is fake are:")
+	for word in top_10_absent["fake"]: print("{}: {}".format(word,top_10_absent["fake"][word]))
+
+	# COMPARE INFLUENCE OF ABSENCE VS. PRESENCE OF WORDS IN CLASSIFICATION
 
 #________________________ RUN PART2 ________________________
-part2()
-
-
+# part2()
+part3()
 
 
 
