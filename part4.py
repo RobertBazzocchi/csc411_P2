@@ -12,6 +12,8 @@ import os.path
 import torch
 from torch.autograd import Variable
 import torch.nn.functional as F
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
 
 def make_column_numbers(datasets):
@@ -114,7 +116,7 @@ def get_sets():
 		print('Building y_test from data')
 		y_test = make_y_set(y_test, 'test')
 
-	return [x_train, y_train, x_val, y_val, x_test, y_test]
+	return [x_train, y_train, x_val, y_val, x_test, y_test, column_list]
 
 
 
@@ -158,54 +160,102 @@ def test_model(model, x_set, y_set):
 
 
 def part4():
-	#print(torch.__version__)
-	#x_train, y_train, x_val, y_val, x_test, y_test = get_datasets()
-	#column_list = make_column_numbers([x_train, x_val, x_test])
-	
-	#x_train = make_x_set(x_train, column_list, 'train')
-	#y_train = make_y_set(y_train,'train')
-	#print(y_train.shape)
 
 	sets = get_sets()
 	x_train = sets[0]
 	y_train = sets[1]
 	x_val = sets[2]
-	y_val = sets[3]	
+	y_val = sets[3]
+	x_test = sets[4]
+	y_test = sets[5]
+	column_list = sets[6]	
 
 	x_train = Variable(torch.from_numpy(x_train)).float()
 	y_train = Variable(torch.from_numpy(y_train)).float()
 	x_val = Variable(torch.from_numpy(x_val)).float()
 	y_val = Variable(torch.from_numpy(y_val)).float()
+	x_test = Variable(torch.from_numpy(x_test)).float()
+	y_test = Variable(torch.from_numpy(y_test)).float()
 
 
 	model = Model()
 
 
-	# Construct our loss function and an Optimizer. The call to model.parameters()
-	# in the SGD constructor will contain the learnable parameters of the two
-	# nn.Linear modules which are members of the model.
-	criterion = torch.nn.BCELoss(size_average=True)
-	optimizer = torch.optim.SGD(model.parameters(), lr=0.5)
+	criterion = torch.nn.BCELoss(size_average=True) #using the cross entropy loss function 
+	optimizer = torch.optim.SGD(model.parameters(), lr=0.5, weight_decay=0) #using Stocastic Gradient Descent
 
-	# Training loop
-	for epoch in range(10000):
-    		y_pred = model(x_train)
-    		# Compute and print loss
-    		loss = criterion(y_pred, y_train)
-    		#print(epoch, loss.data[0])
-
-    		# Zero gradients, perform a backward pass, and update the weights.
-    		optimizer.zero_grad()
-    		loss.backward()
-    		optimizer.step()
-			#print('train')
-    		n = test_model(model,x_train,y_train)
-    		print(n)
-
-    		
-    
 	
 
+	#Seeting up arrays to record the learning rates
+	iterations = 1
+	x = np.linspace(0,iterations, iterations)
+	train_track = np.zeros(iterations,)
+	val_track = np.zeros(iterations,)
 
+	# Training loop
+	for epoch in range(iterations):
+		y_pred = model(x_train)
+		# Compute and print loss
+		loss = criterion(y_pred, y_train)
+		#print(epoch, loss.data[0])
+
+		# Zero gradients, perform a backward pass, and update the weights.
+		optimizer.zero_grad()
+		loss.backward()
+		optimizer.step()
+
+		train_n = test_model(model,x_train,y_train)
+		val_n = test_model(model,x_val,y_val)
+		if epoch%100 == 0:
+			print('train')
+			print(train_n)
+			print('val')			
+			print(val_n)
+
+		train_track[epoch] = train_n
+		val_track[epoch] = val_n
+	
+
+	print('test')
+	test_n = test_model(model, x_test, y_test)
+	print(test_n)
+	#PLOTTING THE LEARNING RATES
+	'''
+	red_patch = mpatches.Patch(color='red', label='Training Set')
+	green_patch = mpatches.Patch(color='green', label='Validation Set')
+	plt.legend(handles=[red_patch, green_patch])
+	plt.plot(x, train_track, 'r', x, val_track, 'g')
+	plt.title('Learning Rates of the Logistic Regression Model')
+	plt.xlabel('Iterations')
+	plt.ylabel('Accuracy')
+	plt.show()
+	'''
+
+	for param in model.parameters():
+  		weights = param.data.numpy()[0][:-1]
+  		break
+	
+
+	sorted_weights = np.sort(weights)
+
+	print('HIGHEST WEIGHTS')
+	for i in range(10):
+		index = np.where(weights==sorted_weights[-i-1])
+		print(sorted_weights[-i-1])
+
+		print(column_list[index[0][0]])
+
+
+	print('LOWEST WEIGHTS')
+	for i in range(10):
+		index = np.where(weights==sorted_weights[i])
+		print(sorted_weights[i])
+
+		print(column_list[index[0][0]])
+
+
+
+
+	
 
 part4()
