@@ -9,7 +9,6 @@ from math import exp as exp
 import torch
 import numpy as np
 import os.path
-<<<<<<< HEAD
 import torch
 from torch.autograd import Variable
 import torch.nn.functional as F
@@ -271,4 +270,5 @@ def part4():
 		words += 1
 
 
-part4()
+if __name__ == "__main__":
+	part4()
