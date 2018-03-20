@@ -1,5 +1,5 @@
 ##########################################
-#				 PART 2 				 #
+#				 PART 4 				 #
 ##########################################
 import time
 from part1 import *
@@ -207,20 +207,20 @@ def part4():
 		train_n = test_model(model,x_train,y_train)
 		val_n = test_model(model,x_val,y_val)
 		if epoch%100 == 0:
-			print('train')
+			print('ITERATION: ' + str(epoch))
+			print('train accuracy')
 			print(train_n)
-			print('val')			
+			print('val accuracy')			
 			print(val_n)
 
 		train_track[epoch] = train_n
 		val_track[epoch] = val_n
 	
 
-	print('test')
+	print('test accuracy')
 	test_n = test_model(model, x_test, y_test)
 	print(test_n)
 	#PLOTTING THE LEARNING RATES
-	'''
 	red_patch = mpatches.Patch(color='red', label='Training Set')
 	green_patch = mpatches.Patch(color='green', label='Validation Set')
 	plt.legend(handles=[red_patch, green_patch])
@@ -229,7 +229,7 @@ def part4():
 	plt.xlabel('Iterations')
 	plt.ylabel('Accuracy')
 	plt.show()
-	'''
+	
 
 	for param in model.parameters():
   		weights = param.data.numpy()[0][:-1]
@@ -239,7 +239,7 @@ def part4():
 	sorted_weights = np.sort(weights)
 	filter_stop = True
 
-	print('HIGHEST WEIGHTS')
+	print('WORDS WITH THE HIGHEST POSITIVE WEIGHTS')
 	i = 0
 	words = 0
 	while words < 10:
@@ -248,14 +248,14 @@ def part4():
 			i += 1
 			continue
 
-		print(sorted_weights[-i-1])
-
-		print(column_list[index[0][0]])
+		
+		print('WORD: ' + str(column_list[index[0][0]]) + \
+			' WEIGHT: ' + str(sorted_weights[-i-1]))
 		i += 1
 		words += 1
 
 
-	print('LOWEST WEIGHTS')
+	print('WORDS WITH THE HIGHEST NEGATIVE WEIGHTS')
 	i = 0
 	words = 0
 	while words < 10:
@@ -263,12 +263,11 @@ def part4():
 		if filter_stop and column_list[index[0][0]] in ENGLISH_STOP_WORDS:
 			i += 1
 			continue
-		print(sorted_weights[i])
+		print('WORD: ' + str(column_list[index[0][0]]) + \
+			' WEIGHT: ' + str(sorted_weights[i]))
 
-		print(column_list[index[0][0]])
 		i += 1
 		words += 1
-
 
 if __name__ == "__main__":
 	part4()

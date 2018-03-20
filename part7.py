@@ -5,6 +5,7 @@
 from sklearn import tree
 from part4 import get_sets
 import matplotlib.pyplot as plt
+import graphviz
 
 def vary_max_depth(X,Y,x_val,y_val):
 	"""
@@ -24,7 +25,11 @@ def vary_max_depth(X,Y,x_val,y_val):
 	best_accuracy = 0
 	best_depth = None
 	for depth in [70, 78, 79, 80, 81, 82, 83, 85, 88, 90]:
-		clf = tree.DecisionTreeClassifier(criterion='gini', splitter='best', max_depth=depth, min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features=None, random_state=None, max_leaf_nodes=None, min_impurity_decrease=0.0, min_impurity_split=None, class_weight=None, presort=False)
+		print("Processing max depth:" + str(depth))
+		clf = tree.DecisionTreeClassifier(criterion='gini', splitter='best', max_depth=depth, \
+			min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features=None, \
+			random_state=None, max_leaf_nodes=None, min_impurity_decrease=0.0, min_impurity_split=None, \
+			class_weight=None, presort=False)
 		clf = clf.fit(X, Y)
 		i = 0
 		correct = 0
@@ -40,6 +45,9 @@ def vary_max_depth(X,Y,x_val,y_val):
 
 		plot_info[0].append(depth)
 		plot_info[1].append(accuracy)
+
+
+
 
 	return best_depth, best_accuracy*100, plot_info
 
@@ -76,7 +84,10 @@ def vary_max_depth_and_features(X,Y,x_val,y_val):
 	for feature in [55, 60, 65, 68, 70, 73, 75, 78, 80, 90]:
 		print("Processing feature: {}".format(feature))
 		for depth in [70, 78, 79, 80, 81, 82, 83, 85, 88, 90]:
-			clf = tree.DecisionTreeClassifier(criterion='entropy', splitter='best', max_depth=depth, min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features=feature, random_state=None, max_leaf_nodes=None, min_impurity_decrease=0.0, min_impurity_split=None, class_weight=None, presort=False)
+			clf = tree.DecisionTreeClassifier(criterion='entropy', splitter='best', max_depth=depth, \
+				min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features=feature, \
+				random_state=None, max_leaf_nodes=None, min_impurity_decrease=0.0, min_impurity_split=None, \
+				class_weight=None, presort=False)
 			clf = clf.fit(X, Y)
 			i = 0
 			correct = 0
@@ -104,7 +115,10 @@ def get_accuracy(X,Y,x_set,y_set,best_max_depth,best_max_features):
 		y_val (list)		: a list of classifications corresponding to the val_set headlines
 	"""
 	best_accuracy = 0
-	clf = tree.DecisionTreeClassifier(criterion='gini', splitter='best', max_depth=best_max_depth, min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features=best_max_features, random_state=None, max_leaf_nodes=None, min_impurity_decrease=0.0, min_impurity_split=None, class_weight=None, presort=False)
+	clf = tree.DecisionTreeClassifier(criterion='gini', splitter='best', max_depth=best_max_depth, \
+		min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features=best_max_features, \
+		random_state=None, max_leaf_nodes=None, min_impurity_decrease=0.0, min_impurity_split=None, \
+		class_weight=None, presort=False)
 	clf = clf.fit(X, Y)
 
 	i = 0
@@ -129,26 +143,43 @@ def part7():
 	x_test = sets[4]
 	y_test = sets[5]
 	column_list = sets[6]	
-
+	
 	# FIND BEST MAX_DEPTH PARAMETER
 	best_max_depth, best_accuracy, plot_info = vary_max_depth(x_train,y_train,x_val,y_val)
 	plot_depth_vs_accuracy(plot_info)
-	# print("Best accuracy: {}%".format(best_accuracy))
-	# print("Best depth: {}".format(best_max_depth))
+	print("Best accuracy: {}%".format(best_accuracy))
+	print("Best depth: {}".format(best_max_depth))
 
-	# FIND BEST MAX_FEATURES / MAX_DEPTH COMBINATION
+	#FIND BEST MAX_FEATURES / MAX_DEPTH COMBINATION
 	best_max_features, best_max_depth, best_accuracy = vary_max_depth_and_features(x_train,y_train,x_val,y_val)
-	# print("Best accuracy: {}%".format(best_accuracy))
-	# print("Best depth: {}".format(best_max_depth))
-	# print("Best feature: {}".format(best_max_features))
+
+	print("Best accuracy: {}%".format(best_accuracy))
+	print("Best depth: {}".format(best_max_depth))
+	print("Best feature: {}".format(best_max_features))
 
 	# OBTAIN RESULTS FOR ALL SETS
+	
 	train_accuracy = get_accuracy(x_train,y_train,x_train,y_train,best_max_depth,best_max_features)
 	val_accuracy = get_accuracy(x_train,y_train,x_val,y_val,best_max_depth,best_max_features)
 	test_accuracy = get_accuracy(x_train,y_train,x_test,y_test,best_max_depth,best_max_features)
 	print("The training set accuracy is {}%.".format(train_accuracy))
 	print("The validation set accuracy is {}%.".format(val_accuracy))
 	print("The test set accuracy is {}%.".format(test_accuracy))
+	
+	
+	clf = tree.DecisionTreeClassifier(criterion='entropy', splitter='best', \
+		max_depth=85, min_samples_split=2, min_samples_leaf=1, \
+		min_weight_fraction_leaf=0.0, max_features=90, random_state=None, \
+		max_leaf_nodes=None, min_impurity_decrease=0.0, min_impurity_split=None, \
+		class_weight=None, presort=False)
+	clf = clf.fit(x_train, y_train)
+
+	column_list.append('BIAS')
+	dot_data = tree.export_graphviz(clf, out_file=None, feature_names=column_list, \
+				class_names=['Real News', 'Fake News'], filled=True, special_characters=True)
+	graph = graphviz.Source(dot_data)  
+	graph.render("realfakenews") 
+	
 
 
 if __name__ == "__main__":
