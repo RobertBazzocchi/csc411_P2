@@ -148,7 +148,8 @@ def part1():
 		print("Occurences in Fake News: {}".format(keyword_counts[keyword]["fake"]))
 
 #________________________ RUN PART1 ________________________
-# part1()
+if __name__ == "__main__":
+	part1()
 
 # SET THE KEYWORDS WE WANT TO COUNT
 # Some examples with the tuple: (real count, fake count)
