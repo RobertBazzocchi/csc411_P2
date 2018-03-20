@@ -387,13 +387,14 @@ def part2():
 
 	# TRAIN (i.e., BUILD THE DISCRETE PROBABILITY DISTRIBUTION)
 	P = create_prob_dist(x_train,y_train,m,p)
-	# word = "machines"
-	# print(P["real"][word])
-	# print(P["fake"][word])
 
 	# GET THE ACCURACY OF THE NAIVE BAYES MODEL
-	accuracy = test_naive_bayes(P,x_val,y_val)
-	print("The best accuracy was {}%, achieved with parameters (m = {}, p = {}).".format(accuracy,m,p))
+	train_accuracy = test_naive_bayes(P,x_train,y_train)
+	val_accuracy = test_naive_bayes(P,x_val,y_val)
+	test_accuracy = test_naive_bayes(P,x_test,y_test)
+	print("The training set accuracy is {}%, achieved with parameters (m = {}, p = {}).".format(train_accuracy,m,p))
+	print("The validation set accuracy is {}%, achieved with parameters (m = {}, p = {}).".format(val_accuracy,m,p))
+	print("The test set accuracy is {}%, achieved with parameters (m = {}, p = {}).".format(test_accuracy,m,p))
 
 	# GET THE PRIOR PROBABILITY DISTRIBUTION DICTIONARY
 	P_priors = get_prior_probabilities(y_train)
@@ -410,33 +411,36 @@ def part3():
 	# GET THE CONDITIONAL PROBABILITY DICTIONARIES (P(c|w) and P(c|not w)) FROM PART2
 	P_classes, P_classes_negated = part2()
 	
-	print("____________________ TOP 10 WITH STOPWORDS ____________________")
-	# GET THE TOP 10 WORDS WITH MOST INFLUENCE WHEN PRESENT AND ABSENT IN CLASSIFYING HEADLINES
-	top_10_present, top_10_absent = get_top10s(P_classes,P_classes_negated)
-	print("The top 10 words whcose presence most strongly predict the news is real are:")
-	for word in top_10_present["real"]: print("{}: {}".format(word,top_10_present["real"][word]))
-	print("The top 10 words whose presence most strongly predict the news is fake are:")
-	for word in top_10_present["fake"]: print("{}: {}".format(word,top_10_present["fake"][word]))
-	print("The top 10 words whose absence most strongly predict the news is real are:")
-	for word in top_10_absent["real"]: print("{}: {}".format(word,top_10_absent["real"][word]))
-	print("The top 10 words whose absence most strongly predict the news is fake are:")
-	for word in top_10_absent["fake"]: print("{}: {}".format(word,top_10_absent["fake"][word]))
+	# UNCOMMENT TO SEE TOP 10 WORDS DISPLAYED FOR EACH SUBSECTION
 
-	print("____________________ TOP 10 WITHOUT STOPWORDS ____________________")
-	# GET THE TOP 10 WORDS WITH MOST INFLUENCE WHEN PRESENT AND ABSENT IN CLASSIFYING HEADLINES (WITHOUT STOPWORDS)
-	top_10_present, top_10_absent = get_top10s(P_classes,P_classes_negated,no_stopwords=True)
-	print("The top 10 words (excluding stopwords) whose presence most strongly predict the news is real are:")
-	for word in top_10_present["real"]: print("{}: {}".format(word,top_10_present["real"][word]))
-	print("The top 10 words (excluding stopwords) whose presence most strongly predict the news is fake are:")
-	for word in top_10_present["fake"]: print("{}: {}".format(word,top_10_present["fake"][word]))
-	print("The top 10 words (excluding stopwords) whose absence most strongly predict the news is real are:")
-	for word in top_10_absent["real"]: print("{}: {}".format(word,top_10_absent["real"][word]))
-	print("The top 10 words (excluding stopwords) whose absence most strongly predict the news is fake are:")
-	for word in top_10_absent["fake"]: print("{}: {}".format(word,top_10_absent["fake"][word]))
+	# print("____________________ TOP 10 WITH STOPWORDS ____________________")
+	# # GET THE TOP 10 WORDS WITH MOST INFLUENCE WHEN PRESENT AND ABSENT IN CLASSIFYING HEADLINES
+	# top_10_present, top_10_absent = get_top10s(P_classes,P_classes_negated)
+	# print("The top 10 words whcose presence most strongly predict the news is real are:")
+	# for word in top_10_present["real"]: print("{}: {}".format(word,top_10_present["real"][word]))
+	# print("The top 10 words whose presence most strongly predict the news is fake are:")
+	# for word in top_10_present["fake"]: print("{}: {}".format(word,top_10_present["fake"][word]))
+	# print("The top 10 words whose absence most strongly predict the news is real are:")
+	# for word in top_10_absent["real"]: print("{}: {}".format(word,top_10_absent["real"][word]))
+	# print("The top 10 words whose absence most strongly predict the news is fake are:")
+	# for word in top_10_absent["fake"]: print("{}: {}".format(word,top_10_absent["fake"][word]))
+
+	# print("____________________ TOP 10 WITHOUT STOPWORDS ____________________")
+	# # GET THE TOP 10 WORDS WITH MOST INFLUENCE WHEN PRESENT AND ABSENT IN CLASSIFYING HEADLINES (WITHOUT STOPWORDS)
+	# top_10_present, top_10_absent = get_top10s(P_classes,P_classes_negated,no_stopwords=True)
+	# print("The top 10 words (excluding stopwords) whose presence most strongly predict the news is real are:")
+	# for word in top_10_present["real"]: print("{}: {}".format(word,top_10_present["real"][word]))
+	# print("The top 10 words (excluding stopwords) whose presence most strongly predict the news is fake are:")
+	# for word in top_10_present["fake"]: print("{}: {}".format(word,top_10_present["fake"][word]))
+	# print("The top 10 words (excluding stopwords) whose absence most strongly predict the news is real are:")
+	# for word in top_10_absent["real"]: print("{}: {}".format(word,top_10_absent["real"][word]))
+	# print("The top 10 words (excluding stopwords) whose absence most strongly predict the news is fake are:")
+	# for word in top_10_absent["fake"]: print("{}: {}".format(word,top_10_absent["fake"][word]))
 
 #________________________ RUN PART2 ________________________
-# part2()
-# part3()
+if __name__ == "__main__":
+	part2()
+	part3()
 
 
 
